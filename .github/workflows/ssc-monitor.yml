@@ -1,0 +1,55 @@
+name: SSC Notice Monitor
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ensure state folder
+        run: mkdir -p state
+
+      - name: Bootstrap once if state missing
+        run: |
+          if [ ! -f state/ssc_notice_state.json ]; then
+            python monitor_ssc_notices.py --bootstrap --state-file state/ssc_notice_state.json
+          fi
+
+      - name: Run monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+        run: python monitor_ssc_notices.py --state-file state/ssc_notice_state.json
+
+      - name: Commit updated state file
+        run: |
+          if git diff --quiet -- state/ssc_notice_state.json; then
+            echo "No state changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/ssc_notice_state.json
+          git commit -m "chore: update SSC notice monitor state"
+          git push
