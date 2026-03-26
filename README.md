@@ -1,70 +1,74 @@
-# SSC Notice Monitor
+# SSC Notice Monitor (Free Setup)
 
-This repo now includes a ready-to-run Python script to monitor **https://ssc.gov.in/** and alert you whenever a new notice appears.
+This project monitors **https://ssc.gov.in/** notice updates and sends alerts on Telegram and/or email.
 
-## File added
-
-- `monitor_ssc_notices.py` — checks notices, stores seen notices locally, sends alerts to Telegram and/or email.
+The monitor script is:
+- `monitor_ssc_notices.py`
 
 ## How it works
 
-1. Downloads the SSC page.
-2. Extracts notice links from notice-like sections (with fallback logic).
-3. Compares against previously seen notices in a local state file (`.ssc_notice_state.json` by default).
-4. Sends notification only for newly found notices.
+1. Downloads SSC page.
+2. Extracts notice links.
+3. Compares with previous state (`state file`).
+4. Sends alert only for new notices.
 
-## 1) First-time setup (baseline)
+---
+
+## 100% Free Option (Recommended): GitHub Actions
+
+You said you do not want to spend any money. Use GitHub Actions scheduled workflow (already added in this repo):
+- `.github/workflows/ssc-monitor.yml`
+
+This runs every 30 minutes for free (within GitHub free limits), so your laptop can stay off.
+
+### Step-by-step (non-coder friendly)
+
+1. Create a free GitHub account.
+2. Create a new repository (public is usually easiest for free usage).
+3. Upload these files:
+   - `monitor_ssc_notices.py`
+   - `.github/workflows/ssc-monitor.yml`
+   - `README.md`
+4. In GitHub repo, open **Settings → Secrets and variables → Actions → New repository secret**.
+5. Add Telegram secrets:
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+6. (Optional) Add email secrets:
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TO`
+7. Go to **Actions** tab, select **SSC Notice Monitor**, click **Run workflow** once.
+8. First run auto-bootstraps state and won’t send old notices.
+9. After that, it checks every 30 minutes and alerts on new notices.
+
+### Telegram quick setup
+
+1. Open Telegram and message `@BotFather`.
+2. Run `/newbot` and copy bot token.
+3. Send one message to your bot.
+4. Open:
+   `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
+5. Copy `chat.id` value.
+
+---
+
+## Local run (optional)
+
+If you still want to test from your computer once:
 
 ```bash
 python3 monitor_ssc_notices.py --bootstrap
-```
-
-This saves existing notices as baseline and sends **no** notification.
-
-## 2) Configure Telegram (optional)
-
-Set env vars:
-
-```bash
-export TELEGRAM_BOT_TOKEN="<your_bot_token>"
-export TELEGRAM_CHAT_ID="<your_chat_id>"
-```
-
-## 3) Configure Email (optional)
-
-```bash
-export SMTP_HOST="smtp.gmail.com"
-export SMTP_PORT="465"
-export SMTP_USER="you@gmail.com"
-export SMTP_PASSWORD="<app_password>"
-export SMTP_TO="you@gmail.com"
-```
-
-> For Gmail, use an app password (not your normal password).
-
-If your provider needs STARTTLS on port `587`, run checks with `--smtp-starttls`.
-
-## 4) Run a check manually
-
-```bash
 python3 monitor_ssc_notices.py
 ```
 
-## 5) Schedule every 15 minutes with cron
+---
 
-```cron
-*/15 * * * * cd /workspace/sahil && /usr/bin/python3 monitor_ssc_notices.py >> ssc_monitor.log 2>&1
-```
+## Environment variables used
 
-## Useful flags
+- Telegram: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+- Email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TO`
 
-- `--url` custom URL to monitor
-- `--state-file` custom state JSON path
-- `--timeout` HTTP timeout (seconds)
-- `--bootstrap` set baseline and skip notifications
-- `--smtp-starttls` use STARTTLS instead of implicit SSL
+---
 
 ## Notes
 
-- If SSC changes its HTML structure, parser fallback may still work, but you should test manually.
-- You can configure either Telegram, email, or both.
+- If SSC site layout changes, parser may need updates.
+- You can use Telegram only (completely free).
